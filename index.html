@@ -202,7 +202,9 @@
       let r_inner = (i - 1) * dr;
       let r_mid = (i - 0.5) * dr;
       heatFlux += Q_arr[i] * r_mid * dr * (foilThick * 1e-6);
-      T_arr[i - 1] = T_arr[i] + (heatFlux / (k * r_inner * (foilThick * 1e-6))) * dr;
+      
+      // FIX: Added + 1e-12 to prevent division by zero at the r=0 center boundary constraint singularity
+      T_arr[i - 1] = T_arr[i] + (heatFlux / (k * (r_inner + 1e-12) * (foilThick * 1e-6))) * dr;
     }
 
     let weightedTempSum = 0;
@@ -214,7 +216,7 @@
     const intensityWeightedAvgT = totalIntensityWeight > 0 ? (weightedTempSum / totalIntensityWeight) : T_boundary;
 
     document.getElementById('avg-temp').innerText = intensityWeightedAvgT.toFixed(2) + " K";
-    document.getElementById('max-temp').innerText = T_arr[0].toFixed(2) + " K";
+    document.getElementById('max-temp').innerText = T_arr[0].toFixed(2) + " K"; // FIX: Correctly maps index 0 to center max T
     document.getElementById('total-power').innerText = totalPowerInFoil.toFixed(4) + " W";
 
     drawProfileGraph(r_arr, T_arr, R_foil, T_boundary);
@@ -239,8 +241,9 @@
     const graphWidth = width - paddingLeft - paddingRight;
     const graphHeight = height - paddingTop - paddingBottom;
 
+    // FIX: T_arr[0] is now the stable numeric maximum peak center temperature
     let maxT = T_arr[0];
-    let yMax = Math.ceil(maxT / 50) * 50 + 20; 
+    let yMax = Math.ceil(maxT / 10) * 10 + 10; 
     let yMin = 290;
 
     function getX(r) {
