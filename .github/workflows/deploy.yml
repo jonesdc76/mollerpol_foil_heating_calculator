@@ -1,1 +1,37 @@
+name: Deploy Heating App to GitHub Pages
 
+on:
+  push:
+    branches: ["main"] # Change to "master" if your default branch uses that name
+  workflow_dispatch: # Allows you to manually trigger a re-build at any time
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Configure Pages Deployment Environment
+        uses: actions/configure-pages@v5
+
+      - name: Upload Static Web Assets Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # Serves your index.html directly from the root folder
+
+      - name: Publish to GitHub Pages Live Link
+        id: deployment
+        uses: actions/deploy-pages@v4
