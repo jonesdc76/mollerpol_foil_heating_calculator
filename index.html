@@ -1,307 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Møller Target Foil Heating Calculator</title>
-  <style>
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background-color: #f3f4f6;
-      color: #111827;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    }
-    h1 { margin-top: 0; color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
-    .subtitle { color: #4b5563; margin-bottom: 25px; font-size: 1.05em; font-style: italic; }
-    .grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 25px; margin-bottom: 25px; }
-    .card { background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; }
-    .card-title { font-weight: bold; margin-bottom: 15px; color: #1f2937; text-transform: uppercase; font-size: 0.9em; letter-spacing: 0.05em; }
-    .form-group { margin-bottom: 12px; }
-    label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 0.9em; color: #374151; }
-    input, select {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      box-sizing: border-box;
-      font-size: 0.95em;
-    }
-    .results-panel {
-      background: #eff6ff;
-      border-left: 5px solid #2563eb;
-      padding: 20px;
-      border-radius: 4px;
-      margin-bottom: 20px;
-    }
-    .metric { display: inline-block; margin-right: 40px; }
-    .metric-label { font-size: 0.85em; text-transform: uppercase; color: #1e40af; font-weight: 600; }
-    .metric-value { font-size: 2em; font-weight: bold; color: #1e3a8a; margin-top: 5px; }
-    .plot-container {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 15px;
-      position: relative;
-    }
-    canvas { width: 100%; height: 350px; display: block; background: #fafafa; }
-    .error { color: #dc2626; background: #fee2e2; padding: 12px; border-radius: 6px; border: 1px solid #fca5a5; font-weight: 500; }
-    .equation-box { font-family: monospace; font-size: 0.9em; background: #f1f5f9; padding: 8px; border-radius: 4px; color: #334155; margin-bottom: 15px; }
-  </style>
-</head>
-<body>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Møller Target Foil Heating Calculator</title>
+    <!-- Pull the stlite styles and distribution from the CDN -->
+    <link rel="stylesheet" href="https://jsdelivr.net" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://jsdelivr.net"></script>
+    <script>
+      stlite.mount(
+        {
+          // stlite handles the numpy dependency installation automatically in Pyodide
+          requirements: ["numpy"], 
+          entrypoint: "app.py",
+          files: {
+            "app.py": `
+import streamlit as st
+import numpy as np
 
-<div class="container">
-  <h1>☢️ Møller Target Foil Heating Calculator</h1>
-  <div class="subtitle">Based on Hall A Technical Report JLab-DocDB-874 for thin iron (Fe) targets.</div>
+# Set up page styling and title
+st.set_page_config(page_title="Møller Target Foil Heating Calculator", layout="centered")
+st.title("🎯 Møller Target Foil Heating Calculator")
+st.markdown("Calculates the intensity-weighted average temperature rise $\\\\langle \\\\Delta T \\\\rangle$ for a circular iron (Fe) foil.")
 
-  <div class="results-panel">
-    <div class="metric">
-      <div class="metric-label">Intensity-Weighted Avg Temp ⟨T⟩</div>
-      <div id="avg-temp" class="metric-value">-- K</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Peak Temperature (Center)</div>
-      <div id="max-temp" class="metric-value">-- K</div>
-    </div>
-    <div class="metric">
-      <div id="power-label" class="metric-label">Total Power Deposited</div>
-      <div id="total-power" class="metric-value">-- W</div>
-    </div>
-  </div>
+# --- SIDEBAR INPUTS ---
+st.sidebar.header("Input Parameters")
 
-  <div class="grid">
-    <div class="card">
-      <div class="card-title">⚙️ Simulation Parameters</div>
-      
-      <div class="form-group">
-        <label for="profileType">Beam Profile Shape</label>
-        <select id="profileType" onchange="calculateHeating();">
-          <option value="gaussian">Gaussian Distribution (σ)</option>
-          <option value="uniform">Uniform Circular Disk</option>
-        </select>
-      </div>
+E_beam = st.sidebar.number_input("Beam Energy, $E_{beam}$ (GeV)", min_value=0.1, max_value=20.0, value=11.0, step=0.5)
+R_beam = st.sidebar.number_input("Beam Radius, $R_{beam}$ (cm)", min_value=0.0001, max_value=1.0, value=0.01, step=0.001, format="%.4f")
+R_foil = st.sidebar.number_input("Foil Radius, $R_{foil}$ (cm)", min_value=0.01, max_value=5.0, value=0.8255, step=0.01, format="%.4f")
+T0 = st.sidebar.number_input("Ambient Temperature, $T_0$ (K)", min_value=1.0, max_value=400.0, value=294.0, step=1.0)
+I_beam = st.sidebar.number_input("Beam Current (µA)", min_value=0.0, max_value=100.0, value=1.0, step=0.1)
 
-      <div class="form-group">
-        <label id="sizeLabel" for="beamSize">Beam Diameter (FWHM) [mm]</label>
-        <input type="number" id="beamSize" value="0.2" min="0.001" step="0.01" oninput="calculateHeating();">
-      </div>
+# --- PHYSICAL CALCULATIONS ---
+x = E_beam
+alpha = (1.749 + 0.2007 * x - 0.09605 * x**2 + 0.0287 * x**3 - 0.005083 * x**4 + 0.0005207 * x**5 - 2.844e-5 * x**6 + 6.402e-7 * x**7)
 
-      <div class="form-group">
-        <label for="beamCurrent">Beam Current [μA]</label>
-        <input type="number" id="beamCurrent" value="5" min="0" step="0.1" oninput="calculateHeating();">
-      </div>
+kappa = 1.289 - 0.002046 * T0 + 1.4e-6 * (T0**2)
 
-      <div class="form-group">
-        <label for="beamEnergy">Beam Energy [GeV]</label>
-        <input type="number" id="beamEnergy" value="11" min="0.1" step="0.1" oninput="calculateHeating();">
-      </div>
+rho = 7.874  # g/cm^3
+C_const = (rho * alpha) / (2 * np.pi * kappa)
 
-      <div class="form-group">
-        <label for="foilDia">Foil Target Diameter [mm]</label>
-        <input type="number" id="foilDia" value="25.0" min="1" step="0.5" oninput="calculateHeating();">
-      </div>
+gamma_e = 0.5772156649
+term1 = (np.log(2) - gamma_e) / 2
+term2 = np.log((np.sqrt(2) * R_beam) / R_foil)
 
-      <div class="form-group">
-        <label for="foilThick">Foil Thickness [μm]</label>
-        <input type="number" id="foilThick" value="10.0" min="0.1" step="0.5" oninput="calculateHeating();">
-      </div>
+avg_dT_per_uA = abs(C_const * (term1 + term2))
+total_dT = avg_dT_per_uA * I_beam
 
-      <div class="form-group">
-        <label for="thermCond">Thermal Conductivity of Iron (k) [W/(m·K)]</label>
-        <input type="number" id="thermCond" value="80.2" min="1" step="0.5" oninput="calculateHeating();">
-      </div>
-    </div>
+# --- DISPLAY RESULTS UI ---
+st.header("Results Summary")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Stopping Power (α)", f"{alpha:.4f} MeV·cm²/g")
+with col2:
+    st.metric("Thermal Cond. (κ)", f"{kappa:.4f} W/(cm·K)")
+with col3:
+    st.metric("Scaling Const (C)", f"{C_const:.4f} K/µA")
 
-    <div class="plot-container">
-      <div class="card-title">📈 Temperature Profile ΔT(r)</div>
-      <div class="equation-box">Boundary Condition: T(R_foil) = 293.15 K (Room Temp)</div>
-      <canvas id="profilePlot"></canvas>
-      <div id="error-message" style="display:none; margin-top: 15px;"></div>
-    </div>
-  </div>
-</div>
-<script>
-  function calculateHeating() {
-    const errorDiv = document.getElementById('error-message');
-    errorDiv.style.display = "none";
+st.markdown("---")
+st.subheader("Temperature Elevation Profile")
+st.info(f"**Average Thermal Rise Rate:** {avg_dT_per_uA:.2f} K / µA of beam current.")
 
-    const profileType = document.getElementById('profileType').value;
-    const beamSize = parseFloat(document.getElementById('beamSize').value);
-    const current = parseFloat(document.getElementById('beamCurrent').value);
-    const energy = parseFloat(document.getElementById('beamEnergy').value);
-    const foilDia = parseFloat(document.getElementById('foilDia').value);
-    const foilThick = parseFloat(document.getElementById('foilThick').value);
-    const k = parseFloat(document.getElementById('thermCond').value);
+if I_beam > 0:
+    st.success(f"**At {I_beam} µA:** Average Foil Temp rises by **{total_dT:.2f} K** (Final Average Temperature: **{T0 + total_dT:.2f} K**)")
 
-    if (beamSize <= 0 || current < 0 || energy <= 0 || foilDia <= 0 || foilThick <= 0 || k <= 0 || beamSize > foilDia) {
-      errorDiv.innerHTML = '<div class="error">Invalid parameters. Beam size must be smaller than the foil size.</div>';
-      errorDiv.style.display = "block";
-      return;
-    }
-
-    document.getElementById('sizeLabel').innerText = profileType === 'gaussian' ? "Beam Diameter (FWHM) [mm]" : "Beam Disk Diameter [mm]";
-
-    const density = 7.874; 
-    const T_boundary = 293.15; 
-    const dEdx = 1.45; 
-    const thickCm = foilThick * 1e-4; 
-    
-    const electronsPerSec = (current * 1e-6) / 1.602176634e-19;
-    const energyLossPerElectronJoules = dEdx * density * thickCm * 1e6 * 1.602176634e-19;
-    const totalPowerInFoil = electronsPerSec * energyLossPerElectronJoules; 
-
-    const R_foil = (foilDia / 2) * 1e-3; 
-    const R_beam = (beamSize / 2) * 1e-3; 
-    const N_steps = 500;
-    const dr = R_foil / N_steps; 
-
-    let r_arr = new Array(N_steps);
-    let Q_arr = new Array(N_steps);
-    let I_arr = new Array(N_steps); 
-    
-    let normSum = 0;
-    if (profileType === 'gaussian') {
-      const sigma = R_beam / Math.sqrt(8 * Math.log(2));
-      for(let i=0; i<N_steps; i++) {
-        let r = (i + 0.5) * dr;
-        r_arr[i] = r;
-        I_arr[i] = Math.exp(-(r*r) / (2 * sigma * sigma));
-        normSum += I_arr[i] * r * dr;
-      }
-      for(let i=0; i<N_steps; i++) {
-        Q_arr[i] = (totalPowerInFoil * I_arr[i]) / (2 * Math.PI * normSum * (foilThick * 1e-6));
-      }
-    } else {
-      for(let i=0; i<N_steps; i++) {
-        let r = (i + 0.5) * dr;
-        r_arr[i] = r;
-        if (r <= R_beam) {
-          I_arr[i] = 1.0;
-          Q_arr[i] = totalPowerInFoil / (Math.PI * R_beam * R_beam * (foilThick * 1e-6));
-        } else {
-          I_arr[i] = 0.0;
-          Q_arr[i] = 0.0;
-        }
-      }
-    }
-
-    let T_arr = new Array(N_steps);
-    T_arr[N_steps - 1] = T_boundary;
-
-    let heatFlux = 0;
-    for (let i = N_steps - 1; i > 0; i--) {
-      let r_inner = (i - 1) * dr;
-      let r_mid = (i - 0.5) * dr;
-      heatFlux += Q_arr[i] * r_mid * dr * (foilThick * 1e-6);
-      
-      // FIX: Added + 1e-12 to prevent division by zero at the r=0 center boundary constraint singularity
-      T_arr[i - 1] = T_arr[i] + (heatFlux / (k * (r_inner + 1e-12) * (foilThick * 1e-6))) * dr;
-    }
-
-    let weightedTempSum = 0;
-    let totalIntensityWeight = 0;
-    for(let i=0; i<N_steps; i++) {
-      weightedTempSum += T_arr[i] * I_arr[i] * r_arr[i] * dr;
-      totalIntensityWeight += I_arr[i] * r_arr[i] * dr;
-    }
-    const intensityWeightedAvgT = totalIntensityWeight > 0 ? (weightedTempSum / totalIntensityWeight) : T_boundary;
-
-    document.getElementById('avg-temp').innerText = intensityWeightedAvgT.toFixed(2) + " K";
-    document.getElementById('max-temp').innerText = T_arr[0].toFixed(2) + " K"; // FIX: Correctly maps index 0 to center max T
-    document.getElementById('total-power').innerText = totalPowerInFoil.toFixed(4) + " W";
-
-    drawProfileGraph(r_arr, T_arr, R_foil, T_boundary);
-  }
-
-  function drawProfileGraph(r_arr, T_arr, R_foil, T_boundary) {
-    const canvas = document.getElementById('profilePlot');
-    const ctx = canvas.getContext('2d');
-    
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-    canvas.width = width;
-    canvas.height = height;
-
-    ctx.clearRect(0, 0, width, height);
-
-    const paddingLeft = 65;
-    const paddingRight = 30;
-    const paddingTop = 30;
-    const paddingBottom = 50;
-
-    const graphWidth = width - paddingLeft - paddingRight;
-    const graphHeight = height - paddingTop - paddingBottom;
-
-    // FIX: T_arr[0] is now the stable numeric maximum peak center temperature
-    let maxT = T_arr[0];
-    let yMax = Math.ceil(maxT / 10) * 10 + 10; 
-    let yMin = 290;
-
-    function getX(r) {
-      return paddingLeft + ((r * 1000) / (R_foil * 1000)) * graphWidth;
-    }
-    function getY(t) {
-      return paddingTop + (1 - (t - yMin) / (yMax - yMin)) * graphHeight;
-    }
-
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 1;
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '11px sans-serif';
-
-    const yLines = 5;
-    for(let i=0; i<=yLines; i++) {
-      let t_val = yMin + (i * (yMax - yMin) / yLines);
-      let y_pos = getY(t_val);
-      ctx.beginPath();
-      ctx.moveTo(paddingLeft, y_pos);
-      ctx.lineTo(width - paddingRight, y_pos);
-      ctx.stroke();
-      ctx.fillText(Math.round(t_val) + " K", paddingLeft - 50, y_pos + 4);
-    }
-
-    const xLines = 5;
-    for(let i=0; i<=xLines; i++) {
-      let r_val = (i * R_foil / xLines);
-      let x_pos = getX(r_val);
-      ctx.beginPath();
-      ctx.moveTo(x_pos, paddingTop);
-      ctx.lineTo(x_pos, height - paddingBottom);
-      ctx.stroke();
-      ctx.fillText((r_val * 1000).toFixed(1) + " mm", x_pos - 15, height - paddingBottom + 20);
-    }
-
-    ctx.fillStyle = '#374151';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText("Radial Distance from Center (r) [mm]", paddingLeft + graphWidth/2 - 90, height - paddingBottom + 45);
-    
-    ctx.save();
-    ctx.translate(paddingLeft - 52, paddingTop + graphHeight/2 + 30);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Temperature T(r) [K]", 0, 0);
-    ctx.restore();
-
-    ctx.strokeStyle = '#2563eb';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(getX(r_arr[0]), getY(T_arr[0]));
-
-    for(let i=1; i<r_arr.length; i++) {
-      ctx.lineTo(getX(r_arr[i]), getY(T_arr[i]));
-    }
-    ctx.stroke();
-  }
-
-  window.onload = calculateHeating;
-</script>
-</body>
+st.markdown("### Underlying Analytical Formula")
+st.latex(r"\\langle \\Delta T\\rangle = C\\left(\\frac{\\ln(2)-\\gamma_e}{2}+\\ln{\\left(\\frac{\\sqrt{2}R_{\\text{beam}}}{R_{\\text{foil}}}\\right)}\\right)")
+            `
+          }
+        },
+        document.getElementById("root")
+      );
+    </script>
+  </body>
 </html>
