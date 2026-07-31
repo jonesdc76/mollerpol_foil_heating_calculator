@@ -211,7 +211,7 @@
       <div class="metric-value" id="out_kappa">-</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Constant -C = -<sup>I&alpha;&rho;</sup>&frasl;<sub>2&pi;&kappa;</sub></div>
+      <div class="metric-label">Constant C = -<sup>I&alpha;&rho;</sup>&frasl;<sub>2&pi;&kappa;</sub></div>
       <div class="metric-value" id="out_c">-</div>
     </div>
   </div>
@@ -263,7 +263,7 @@
     const term1 = (Math.log(2) - gamma_e) / 2;
     const term2 = Math.log((Math.sqrt(2) * R_beam) / R_foil);
     
-    const avg_dT_per_uA = Math.abs(C_const * (term1 + term2));
+    const avg_dT_per_uA = C_const * (term1 + term2);
     const total_dT = avg_dT_per_uA * I_beam;
     const final_temp = T0 + total_dT;
 
