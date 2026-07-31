@@ -257,7 +257,7 @@
 
     // 3. Scale factor C constant (Negative constant in Kelvin per microampere)
     const rho = 7.874; // g/cm^3
-    const C_const = - (rho * alpha) / (2 * Math.PI * kappa);
+    const C_const = - (I_beam * rho * alpha) / (2 * Math.PI * kappa);
 
     // 4. Formula implementation
     const gamma_e = 0.5772156649;
