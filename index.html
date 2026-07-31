@@ -185,17 +185,17 @@
 
     // 1. Calculate stopping power alpha (MeV*cm^2/g) via the 7th-degree polynomial
     const x = E;
-    const alpha = 1.749 
-                + 0.2007 * x 
-                - 0.09605 * Math.pow(x, 2) 
-                + 0.0287 * Math.pow(x, 3) 
-                - 0.005083 * Math.pow(x, 4) 
-                + 0.0005207 * Math.pow(x, 5) 
-                - 2.844e-5 * Math.pow(x, 6) 
-                + 6.402e-7 * Math.pow(x, 7);
+    const alpha = 1.74865 
+                + 0.200654 * x 
+                - 0.096052 * Math.pow(x, 2) 
+                + 0.0286961 * Math.pow(x, 3) 
+                - 0.00508344 * Math.pow(x, 4) 
+                + 0.000520716 * Math.pow(x, 5) 
+                - 2.84424e-5 * Math.pow(x, 6) 
+                + 6.40169e-7 * Math.pow(x, 7);
 
     // 2. Temperature-dependent thermal conductivity kappa(T)
-    const kappa = 1.289 - 0.002046 * T0 + 1.4e-6 * Math.pow(T0, 2);
+    const kappa = 1.2892 - 0.002046 * T0 + 1.4e-6 * Math.pow(T0, 2);
 
     // 3. Scale factor C constant (Kelvin per microampere)
     const rho = 7.874; // g/cm^3
