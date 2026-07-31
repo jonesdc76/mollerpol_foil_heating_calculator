@@ -63,12 +63,35 @@
       box-sizing: border-box;
       font-size: 15px;
     }
-    /* Updated to 4 columns to fit R_beam and parameters */
+    /* Equation display styling */
+    .formula-box {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 15px;
+      text-align: center;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    .formula-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .formula-expression {
+      font-family: "Georgia", "Times New Roman", serif;
+      font-size: 17px;
+      color: #111;
+      line-height: 1.6;
+    }
+    /* Results grid styling */
     .results-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 15px;
-      margin-top: 25px;
+      margin-top: 20px;
       margin-bottom: 25px;
     }
     @media (min-width: 550px) {
@@ -164,6 +187,13 @@
     </div>
   </div>
 
+  <div class="formula-box">
+    <div class="formula-title">Temperature Rise Equation</div>
+    <div class="formula-expression">
+      &langle;&Delta;T&rangle; = -C &middot; &left;[ <sup>ln(2) - &gamma;<sub>e</sub></sup>&frasl;<sub>2</sub> + ln&left;( <sup>&radic;2 R<sub>beam</sub></sup>&frasl;<sub>R<sub>foil</sub></sub> &right;) &right;]
+    </div>
+  </div>
+
   <hr>
 
   <h2>Results Summary</h2>
@@ -181,7 +211,7 @@
       <div class="metric-value" id="out_kappa">-</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Constant C = -<sup>I&alpha;&rho;</sup>&frasl;<sub>2&pi;&kappa;</sub></div>
+      <div class="metric-label">Constant -C = -<sup>I&alpha;&rho;</sup>&frasl;<sub>2&pi;&kappa;</sub></div>
       <div class="metric-value" id="out_c">-</div>
     </div>
   </div>
@@ -224,16 +254,16 @@
     // 2. Temperature-dependent thermal conductivity kappa(T)
     const kappa = 1.2892 - 0.002046 * T0 + 1.4e-6 * Math.pow(T0, 2);
 
-    // 3. Scale factor C constant (Kelvin per microampere)
+    // 3. Scale factor C constant (Negative constant in Kelvin per microampere)
     const rho = 7.874; // g/cm^3
-    const C_const = -(rho * alpha) / (2 * Math.PI * kappa);
+    const C_const = - (rho * alpha) / (2 * Math.PI * kappa);
 
     // 4. Formula implementation
     const gamma_e = 0.5772156649;
     const term1 = (Math.log(2) - gamma_e) / 2;
     const term2 = Math.log((Math.sqrt(2) * R_beam) / R_foil);
     
-    const avg_dT_per_uA = C_const * (term1 + term2);
+    const avg_dT_per_uA = Math.abs(C_const * (term1 + term2));
     const total_dT = avg_dT_per_uA * I_beam;
     const final_temp = T0 + total_dT;
 
