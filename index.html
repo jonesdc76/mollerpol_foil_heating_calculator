@@ -226,14 +226,14 @@
 
     // 3. Scale factor C constant (Kelvin per microampere)
     const rho = 7.874; // g/cm^3
-    const C_const = (rho * alpha) / (2 * Math.PI * kappa);
+    const C_const = -(rho * alpha) / (2 * Math.PI * kappa);
 
     // 4. Formula implementation
     const gamma_e = 0.5772156649;
     const term1 = (Math.log(2) - gamma_e) / 2;
     const term2 = Math.log((Math.sqrt(2) * R_beam) / R_foil);
     
-    const avg_dT_per_uA = Math.abs(C_const * (term1 + term2));
+    const avg_dT_per_uA = C_const * (term1 + term2);
     const total_dT = avg_dT_per_uA * I_beam;
     const final_temp = T0 + total_dT;
 
