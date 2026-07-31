@@ -212,7 +212,7 @@
       <div class="metric-value" id="out_kappa">-</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Constant C = -<sup>I&alpha;&rho;</sup>&frasl;<sub>2&pi;&kappa;</sub></div>
+      <div class="metric-label">Constant C = -<sup>&alpha;&rho;</sup>&frasl;<sub>2&pi;&kappa;</sub></div>
       <div class="metric-value" id="out_c">-</div>
     </div>
   </div>
@@ -257,7 +257,7 @@
 
     // 3. Scale factor C constant (Negative constant in Kelvin per microampere)
     const rho = 7.874; // g/cm^3
-    const C_const = - (I_beam * rho * alpha) / (2 * Math.PI * kappa);
+    const C_const = - (rho * alpha) / (2 * Math.PI * kappa);
 
     // 4. Formula implementation
     const gamma_e = 0.5772156649;
