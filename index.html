@@ -4,73 +4,68 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Møller Target Foil Heating Calculator</title>
-    <!-- Pull the stlite styles and distribution from the CDN -->
+    <!-- Core stlite engine and interface styling -->
     <link rel="stylesheet" href="https://jsdelivr.net" />
   </head>
   <body>
     <div id="root"></div>
     <script src="https://jsdelivr.net"></script>
     <script>
+      // Defining the code as clean array lines prevents hidden multi-line spacing syntax errors
+      const pythonCode = [
+        "import streamlit as st",
+        "import numpy as np",
+        "",
+        "st.set_page_config(page_title='Møller Target Foil Heating Calculator', layout='centered')",
+        "st.title('🎯 Møller Target Foil Heating Calculator')",
+        "st.markdown('Calculates the intensity-weighted average temperature rise $\\\\langle \\\\Delta T \\\\rangle$ for a circular iron (Fe) foil.')",
+        "",
+        "st.sidebar.header('Input Parameters')",
+        "E_beam = st.sidebar.number_input('Beam Energy, $E_{beam}$ (GeV)', min_value=0.1, max_value=20.0, value=11.0, step=0.5)",
+        "R_beam = st.sidebar.number_input('Beam Radius, $R_{beam}$ (cm)', min_value=0.0001, max_value=1.0, value=0.01, step=0.001, format='%.4f')",
+        "R_foil = st.sidebar.number_input('Foil Radius, $R_{foil}$ (cm)', min_value=0.01, max_value=5.0, value=0.8255, step=0.01, format='%.4f')",
+        "T0 = st.sidebar.number_input('Ambient Temperature, $T_0$ (K)', min_value=1.0, max_value=400.0, value=294.0, step=1.0)",
+        "I_beam = st.sidebar.number_input('Beam Current (µA)', min_value=0.0, max_value=100.0, value=1.0, step=0.1)",
+        "",
+        "x = E_beam",
+        "alpha = (1.749 + 0.2007 * x - 0.09605 * x**2 + 0.0287 * x**3 - 0.005083 * x**4 + 0.0005207 * x**5 - 2.844e-5 * x**6 + 6.402e-7 * x**7)",
+        "kappa = 1.289 - 0.002046 * T0 + 1.4e-6 * (T0**2)",
+        "rho = 7.874",
+        "C_const = (rho * alpha) / (2 * np.pi * kappa)",
+        "",
+        "gamma_e = 0.5772156649",
+        "term1 = (np.log(2) - gamma_e) / 2",
+        "term2 = np.log((np.sqrt(2) * R_beam) / R_foil)",
+        "",
+        "avg_dT_per_uA = abs(C_const * (term1 + term2))",
+        "total_dT = avg_dT_per_uA * I_beam",
+        "",
+        "st.header('Results Summary')",
+        "col1, col2, col3 = st.columns(3)",
+        "with col1:",
+        "    st.metric('Stopping Power (α)', f'{alpha:.4f} MeV·cm²/g')",
+        "with col2:",
+        "    st.metric('Thermal Cond. (κ)', f'{kappa:.4f} W/(cm·K)')",
+        "with col3:",
+        "    st.metric('Scaling Const (C)', f'{C_const:.4f} K/µA')",
+        "",
+        "st.markdown('---')",
+        "st.subheader('Temperature Elevation Profile')",
+        "st.info(f'**Average Thermal Rise Rate:** {avg_dT_per_uA:.2f} K / µA of beam current.')",
+        "",
+        "if I_beam > 0:",
+        "    st.success(f'**At {I_beam} µA:** Average Foil Temp rises by **{total_dT:.2f} K** (Final Average Temperature: **{T0 + total_dT:.2f} K**)')",
+        "",
+        "st.markdown('### Underlying Analytical Formula')",
+        "st.latex(r'\\\\langle \\\\Delta T\\\\rangle = C\\\\left(\\\\frac{\\\\ln(2)-\\\\gamma_e}{2}+\\\\ln{\\\\left(\\\\frac{\\\\sqrt{2}R_{\\\\text{beam}}}{R_{\\\\text{foil}}}\\right)}\\\\right)')"
+      ].join("\n");
+
       stlite.mount(
         {
-          // stlite handles the numpy dependency installation automatically in Pyodide
-          requirements: ["numpy"], 
+          requirements: ["numpy"],
           entrypoint: "app.py",
           files: {
-            "app.py": `
-import streamlit as st
-import numpy as np
-
-# Set up page styling and title
-st.set_page_config(page_title="Møller Target Foil Heating Calculator", layout="centered")
-st.title("🎯 Møller Target Foil Heating Calculator")
-st.markdown("Calculates the intensity-weighted average temperature rise $\\\\langle \\\\Delta T \\\\rangle$ for a circular iron (Fe) foil.")
-
-# --- SIDEBAR INPUTS ---
-st.sidebar.header("Input Parameters")
-
-E_beam = st.sidebar.number_input("Beam Energy, $E_{beam}$ (GeV)", min_value=0.1, max_value=20.0, value=11.0, step=0.5)
-R_beam = st.sidebar.number_input("Beam Radius, $R_{beam}$ (cm)", min_value=0.0001, max_value=1.0, value=0.01, step=0.001, format="%.4f")
-R_foil = st.sidebar.number_input("Foil Radius, $R_{foil}$ (cm)", min_value=0.01, max_value=5.0, value=0.8255, step=0.01, format="%.4f")
-T0 = st.sidebar.number_input("Ambient Temperature, $T_0$ (K)", min_value=1.0, max_value=400.0, value=294.0, step=1.0)
-I_beam = st.sidebar.number_input("Beam Current (µA)", min_value=0.0, max_value=100.0, value=1.0, step=0.1)
-
-# --- PHYSICAL CALCULATIONS ---
-x = E_beam
-alpha = (1.749 + 0.2007 * x - 0.09605 * x**2 + 0.0287 * x**3 - 0.005083 * x**4 + 0.0005207 * x**5 - 2.844e-5 * x**6 + 6.402e-7 * x**7)
-
-kappa = 1.289 - 0.002046 * T0 + 1.4e-6 * (T0**2)
-
-rho = 7.874  # g/cm^3
-C_const = (rho * alpha) / (2 * np.pi * kappa)
-
-gamma_e = 0.5772156649
-term1 = (np.log(2) - gamma_e) / 2
-term2 = np.log((np.sqrt(2) * R_beam) / R_foil)
-
-avg_dT_per_uA = abs(C_const * (term1 + term2))
-total_dT = avg_dT_per_uA * I_beam
-
-# --- DISPLAY RESULTS UI ---
-st.header("Results Summary")
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Stopping Power (α)", f"{alpha:.4f} MeV·cm²/g")
-with col2:
-    st.metric("Thermal Cond. (κ)", f"{kappa:.4f} W/(cm·K)")
-with col3:
-    st.metric("Scaling Const (C)", f"{C_const:.4f} K/µA")
-
-st.markdown("---")
-st.subheader("Temperature Elevation Profile")
-st.info(f"**Average Thermal Rise Rate:** {avg_dT_per_uA:.2f} K / µA of beam current.")
-
-if I_beam > 0:
-    st.success(f"**At {I_beam} µA:** Average Foil Temp rises by **{total_dT:.2f} K** (Final Average Temperature: **{T0 + total_dT:.2f} K**)")
-
-st.markdown("### Underlying Analytical Formula")
-st.latex(r"\\langle \\Delta T\\rangle = C\\left(\\frac{\\ln(2)-\\gamma_e}{2}+\\ln{\\left(\\frac{\\sqrt{2}R_{\\text{beam}}}{R_{\\text{foil}}}\\right)}\\right)")
-            `
+            "app.py": pythonCode
           }
         },
         document.getElementById("root")
