@@ -126,8 +126,13 @@
   </div>
   
   <div class="form-group">
-    <label for="R_beam">Beam Radius, R<sub>beam</sub> (cm)</label>
-    <input type="number" id="R_beam" value="0.01" step="0.001" min="0.0001">
+    <label for="sigma_x">Beam Sigma X, &sigma;<sub>x</sub> (cm)</label>
+    <input type="number" id="sigma_x" value="0.01" step="0.001" min="0.0001">
+  </div>
+
+  <div class="form-group">
+    <label for="sigma_y">Beam Sigma Y, &sigma;<sub>y</sub> (cm)</label>
+    <input type="number" id="sigma_y" value="0.01" step="0.001" min="0.0001">
   </div>
   
   <div class="form-group">
@@ -178,10 +183,14 @@
   function calculate() {
     // Read user inputs
     const E = parseFloat(document.getElementById('E_beam').value);
-    const R_beam = parseFloat(document.getElementById('R_beam').value);
+    const sigma_x = parseFloat(document.getElementById('sigma_x').value);
+    const sigma_y = parseFloat(document.getElementById('sigma_y').value);
     const R_foil = parseFloat(document.getElementById('R_foil').value);
     const T0 = parseFloat(document.getElementById('T0').value);
     const I_beam = parseFloat(document.getElementById('I_beam').value);
+
+    // Calculate geometric mean beam radius: R_beam = sqrt(sigma_x * sigma_y)
+    const R_beam = Math.sqrt(sigma_x * sigma_y);
 
     // 1. Calculate stopping power alpha (MeV*cm^2/g) via the 7th-degree polynomial
     const x = E;
